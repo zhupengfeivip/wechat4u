@@ -4,6 +4,10 @@ const Wechat = require('./src/wechat.js')
 const qrcode = require('qrcode-terminal')
 const fs = require('fs')
 const request = require('request')
+const schedule = require('./schedule/index')
+const config = require('./config/index')
+// const superagent = require('./superagent/index')
+const getLatestNews = require('./superagent')
 
 let bot
 /**
@@ -15,6 +19,10 @@ try {
 } catch (e) {
   bot = new Wechat()
 }
+
+// 延时函数，防止检测出类似机器人行为操作
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+
 /**
  * 启动机器人
  */
@@ -59,7 +67,14 @@ bot.on('logout', () => {
  * 联系人更新事件，参数为被更新的联系人列表
  */
 bot.on('contacts-updated', contacts => {
-  console.log(contacts)
+  // console.log(contacts)
+  for (let i = 0; i < contacts.length; i++) {
+    const con = contacts[i]
+    console.log(`[${i}/${contacts.length}]${con.UserName},${con.NickName},成员数量:${con.MemberCount}`)
+    if (con.NickName && con.NickName.indexOf('机器人') >= 0) {
+      config.SendNewsRooms.push(con.UserName)
+    }
+  }
   console.log('联系人数量：', Object.keys(bot.contacts).length)
 })
 /**
@@ -76,7 +91,10 @@ bot.on('login', () => {
    * 演示发送消息到文件传输助手
    * 通常回复消息时可以用 msg.FromUserName
    */
-  let ToUserName = 'filehelper'
+  // let ToUserName = 'filehelper'
+  let ToUserName = '@@bbc628d89d74d5e0caff6bf3123aee4febd8804b7472c720e0c6407ced868cba'
+
+  initDay().then(r => console.log('initDay success.'))
 
   /**
    * 发送文本消息，可以包含emoji(😒)和QQ表情([坏笑])
@@ -85,16 +103,65 @@ bot.on('login', () => {
     .catch(err => {
       bot.emit('error', err)
     })
+  //
+  // setInterval(function () {
+  //   console.log('interval')
+  //   bot.sendMsg('发送文本消息，可以包含emoji(😒)和QQ表情([坏笑])', ToUserName)
+  //     .catch(err => {
+  //       bot.emit('error', err)
+  //     })
+  // }, 3000)
+
+  // 创建微信每日说定时任务
+  async function initDay () {
+    console.log('已经设定每日说任务')
+
+    // 定时任务：每日自动发送新闻
+    schedule.setSchedule(config.SendNewsTime, async () => {
+      await sendNews()
+    })
+  }
+
+  /**
+   * 发送今日热点新闻
+   * @returns {Promise<void>}
+   */
+  async function sendNews () {
+    console.log('发送今日热点新闻' + new Date())
+    let newData = await getLatestNews()
+    let newsInfo = newData.content
+    for (const roomId of config.SendNewsRooms) {
+      console.log(`群名: ${roomId}`)
+
+      let content = `今日热点 ${newsInfo.calendar.cMonth}月${newsInfo.calendar.cDay}日，${newsInfo.calendar.ncWeek}，`
+      content += `农历${newsInfo.calendar.monthCn}${newsInfo.calendar.dayCn}\n`
+      let sendCount = 15
+      if (newsInfo.newsList.length < sendCount) sendCount = newsInfo.newsList.length
+      for (let i = 0; i < sendCount; i++) {
+        const oneNew = newsInfo.newsList[i]
+        content += `${i + 1}. [${oneNew.category}]${oneNew.title}\n`
+      }
+      if (newsInfo.sentence !== undefined)
+        content += `\n[心语]${newsInfo.sentence.sentence} -- ${newsInfo.sentence.author}\n`
+
+      content += `\n更多信息可浏览https://fei.linyingtech.com/news?id=${newData.id}\n关注公众号:[一级码农]，免费体验chatgpt，及时获取最新科技娱乐实时新闻。\n`
+      await delay(100)
+      bot.sendMsg(content, roomId)
+        .catch(err => {
+          bot.emit('error', err)
+        })
+    }
+  }
 
   /**
    * 通过表情MD5发送表情
    */
-  bot.sendMsg({
-    emoticonMd5: '00c801cdf69127550d93ca52c3f853ff'
-  }, ToUserName)
-    .catch(err => {
-      bot.emit('error', err)
-    })
+  // bot.sendMsg({
+  //   emoticonMd5: '00c801cdf69127550d93ca52c3f853ff'
+  // }, ToUserName)
+  //   .catch(err => {
+  //     bot.emit('error', err)
+  //   })
 
   /**
    * 以下通过上传文件发送图片，视频，附件等
@@ -113,71 +180,64 @@ bot.on('login', () => {
   /**
    * 发送图片
    */
-  bot.sendMsg({
-    file: request('https://raw.githubusercontent.com/nodeWechat/wechat4u/master/bot-qrcode.jpg'),
-    filename: 'bot-qrcode.jpg'
-  }, ToUserName)
-    .catch(err => {
-      bot.emit('error', err)
-    })
+  // bot.sendMsg({
+  //   file: request('https://raw.githubusercontent.com/nodeWechat/wechat4u/master/bot-qrcode.jpg'),
+  //   filename: 'bot-qrcode.jpg'
+  // }, ToUserName)
+  //   .catch(err => {
+  //     bot.emit('error', err)
+  //   })
 
   /**
    * 发送表情
    */
-  bot.sendMsg({
-    file: fs.createReadStream('./media/test.gif'),
-    filename: 'test.gif'
-  }, ToUserName)
-    .catch(err => {
-      bot.emit('error', err)
-    })
+  // bot.sendMsg({
+  //   file: fs.createReadStream('./media/test.gif'),
+  //   filename: 'test.gif'
+  // }, ToUserName)
+  //   .catch(err => {
+  //     bot.emit('error', err)
+  //   })
 
   /**
    * 发送视频
    */
-  bot.sendMsg({
-    file: fs.createReadStream('./media/test.mp4'),
-    filename: 'test.mp4'
-  }, ToUserName)
-    .catch(err => {
-      bot.emit('error', err)
-    })
+  // bot.sendMsg({
+  //   file: fs.createReadStream('./media/test.mp4'),
+  //   filename: 'test.mp4'
+  // }, ToUserName)
+  //   .catch(err => {
+  //     bot.emit('error', err)
+  //   })
 
   /**
    * 发送文件
    */
-  bot.sendMsg({
-    file: fs.createReadStream('./media/test.txt'),
-    filename: 'test.txt'
-  }, ToUserName)
-    .catch(err => {
-      bot.emit('error', err)
-    })
+  // bot.sendMsg({
+  //   file: fs.createReadStream('./media/test.txt'),
+  //   filename: 'test.txt'
+  // }, ToUserName)
+  //   .catch(err => {
+  //     bot.emit('error', err)
+  //   })
 
-  /**
-   * 发送撤回消息请求
-   */
-  bot.sendMsg('测试撤回', ToUserName)
-     .then(res => {
-       // 需要取得待撤回消息的MsgID
-       return bot.revokeMsg(res.MsgID, ToUserName)
-     })
-     .catch(err => {
-       console.log(err)
-     })
+  // 发送撤回消息请求
+  // bot.sendMsg('测试撤回', ToUserName)
+  //   .then(res => {
+  //     // 需要取得待撤回消息的MsgID
+  //     return bot.revokeMsg(res.MsgID, ToUserName)
+  //   })
+  //   .catch(err => {
+  //     console.log(err)
+  //   })
 })
 /**
  * 如何处理会话消息
  */
 bot.on('message', msg => {
-  /**
-   * 获取消息时间
-   */
-  console.log(`----------${msg.getDisplayTime()}----------`)
-  /**
-   * 获取消息发送者的显示名
-   */
-  console.log(bot.contacts[msg.FromUserName].getDisplayName())
+  // 获取消息时间 获取消息发送者的显示名
+  console.log(`-------收到消息：--${msg.getDisplayTime()}--${msg.FromUserName}, ${bot.contacts[msg.FromUserName].getDisplayName()}--------`)
+
   /**
    * 判断消息类型
    */
@@ -193,33 +253,33 @@ bot.on('message', msg => {
        * 图片消息
        */
       console.log('图片消息，保存到本地')
-      bot.getMsgImg(msg.MsgId).then(res => {
-        fs.writeFileSync(`./media/${msg.MsgId}.jpg`, res.data)
-      }).catch(err => {
-        bot.emit('error', err)
-      })
+      // bot.getMsgImg(msg.MsgId).then(res => {
+      //   fs.writeFileSync(`./media/${msg.MsgId}.jpg`, res.data)
+      // }).catch(err => {
+      //   bot.emit('error', err)
+      // })
       break
     case bot.CONF.MSGTYPE_VOICE:
       /**
        * 语音消息
        */
       console.log('语音消息，保存到本地')
-      bot.getVoice(msg.MsgId).then(res => {
-        fs.writeFileSync(`./media/${msg.MsgId}.mp3`, res.data)
-      }).catch(err => {
-        bot.emit('error', err)
-      })
+      // bot.getVoice(msg.MsgId).then(res => {
+      //   fs.writeFileSync(`./media/${msg.MsgId}.mp3`, res.data)
+      // }).catch(err => {
+      //   bot.emit('error', err)
+      // })
       break
     case bot.CONF.MSGTYPE_EMOTICON:
       /**
        * 表情消息
        */
       console.log('表情消息，保存到本地')
-      bot.getMsgImg(msg.MsgId).then(res => {
-        fs.writeFileSync(`./media/${msg.MsgId}.gif`, res.data)
-      }).catch(err => {
-        bot.emit('error', err)
-      })
+      // bot.getMsgImg(msg.MsgId).then(res => {
+      //   fs.writeFileSync(`./media/${msg.MsgId}.gif`, res.data)
+      // }).catch(err => {
+      //   bot.emit('error', err)
+      // })
       break
     case bot.CONF.MSGTYPE_VIDEO:
     case bot.CONF.MSGTYPE_MICROVIDEO:
@@ -227,11 +287,11 @@ bot.on('message', msg => {
        * 视频消息
        */
       console.log('视频消息，保存到本地')
-      bot.getVideo(msg.MsgId).then(res => {
-        fs.writeFileSync(`./media/${msg.MsgId}.mp4`, res.data)
-      }).catch(err => {
-        bot.emit('error', err)
-      })
+      // bot.getVideo(msg.MsgId).then(res => {
+      //   fs.writeFileSync(`./media/${msg.MsgId}.mp4`, res.data)
+      // }).catch(err => {
+      //   bot.emit('error', err)
+      // })
       break
     case bot.CONF.MSGTYPE_APP:
       if (msg.AppMsgType == 6) {
@@ -239,18 +299,19 @@ bot.on('message', msg => {
          * 文件消息
          */
         console.log('文件消息，保存到本地')
-        bot.getDoc(msg.FromUserName, msg.MediaId, msg.FileName).then(res => {
-          fs.writeFileSync(`./media/${msg.FileName}`, res.data)
-          console.log(res.type);
-        }).catch(err => {
-          bot.emit('error', err)
-        })
+        // bot.getDoc(msg.FromUserName, msg.MediaId, msg.FileName).then(res => {
+        //   fs.writeFileSync(`./media/${msg.FileName}`, res.data)
+        //   console.log(res.type)
+        // }).catch(err => {
+        //   bot.emit('error', err)
+        // })
       }
       break
     default:
       break
   }
 })
+
 /**
  * 如何处理红包消息
  */
@@ -297,10 +358,10 @@ bot.on('message', msg => {
  */
 bot.on('message', msg => {
   // 不是所有消息都可以直接转发
-  bot.forwardMsg(msg, 'filehelper')
-    .catch(err => {
-      bot.emit('error', err)
-    })
+  // bot.forwardMsg(msg, 'filehelper')
+  //   .catch(err => {
+  //     bot.emit('error', err)
+  //   })
 })
 /**
  * 如何获取联系人头像

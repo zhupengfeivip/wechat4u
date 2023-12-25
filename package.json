@@ -13,12 +13,24 @@
     "core": "cross-env DEBUG=wechat,core node run-core.js"
   },
   "dependencies": {
+    "@babel/runtime": "^7.23.6",
     "axios": "^1.1.3",
+    "babel-core": "^6.26.3",
+    "babel-loader": "^9.1.3",
+    "babel-polyfill": "^6.26.0",
+    "babel-preset-es2015": "^6.24.1",
+    "babel-preset-stage-0": "^6.24.1",
     "bl": "^1.1.2",
+    "cheerio": "1.0.0-rc.12",
+    "crypto": "^1.0.1",
     "debug": "^2.2.0",
     "form-data": "^2.1.2",
     "lodash": "^4.17.11",
-    "mime": "^1.3.4"
+    "mime": "^1.3.4",
+    "node-machine-id": "^1.1.12",
+    "node-schedule": "^2.1.1",
+    "regenerator-runtime": "^0.14.1",
+    "superagent": "^8.1.2"
   },
   "repository": {
     "type": "git",
