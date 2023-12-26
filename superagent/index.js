@@ -30,32 +30,7 @@ import 'regenerator-runtime/runtime'
 /**
  * 获取最新的新闻
  */
-// async function getLatestNews () {
-//   // 获取土味情话
-//   let url = 'http://fei.linyingtech.com/api/v1/latest/news'
-//   try {
-//     let res = await superagent.req({url, method: 'GET'})
-//     if (res.code === 100) {
-//       return res.data
-//     } else {
-//       return null
-//     }
-//   } catch (err) {
-//     console.log('获取接口失败', err)
-//   }
-// }
-
-// export default {
-//   // getOne,
-//   // getTXweather,
-//   // getReply,
-//   // getSweetWord,
-//   // getTuLingReply,
-//   // getTXTLReply,
-//   // getRubbishType,
-//   getLatestNews
-// }
-export default async function getLatestNews () {
+export async function getLatestNews () {
   // 获取土味情话
   let url = 'http://fei.linyingtech.com/api/v1/latest/news'
   try {
@@ -69,3 +44,28 @@ export default async function getLatestNews () {
     console.log('获取接口失败', err)
   }
 }
+
+// export default {
+//   // getOne,
+//   // getTXweather,
+//   // getReply,
+//   // getSweetWord,
+//   // getTuLingReply,
+//   // getTXTLReply,
+//   // getRubbishType,
+//   getLatestNews
+// }
+// export default async function getLatestNews () {
+//   // 获取土味情话
+//   let url = 'http://fei.linyingtech.com/api/v1/latest/news'
+//   try {
+//     let res = await superagent.req({url, method: 'GET'})
+//     if (res.code === 100) {
+//       return res.data
+//     } else {
+//       return null
+//     }
+//   } catch (err) {
+//     console.log('获取接口失败', err)
+//   }
+// }

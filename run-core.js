@@ -6,8 +6,7 @@ const fs = require('fs')
 const request = require('request')
 const schedule = require('./schedule/index')
 const config = require('./config/index')
-// const superagent = require('./superagent/index')
-const getLatestNews = require('./superagent')
+const superagent = require('./superagent/superagent.js')
 
 let bot
 /**
@@ -21,7 +20,7 @@ try {
 }
 
 // 延时函数，防止检测出类似机器人行为操作
-const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
 
 /**
  * 启动机器人
@@ -71,8 +70,13 @@ bot.on('contacts-updated', contacts => {
   for (let i = 0; i < contacts.length; i++) {
     const con = contacts[i]
     console.log(`[${i}/${contacts.length}]${con.UserName},${con.NickName},成员数量:${con.MemberCount}`)
-    if (con.NickName && con.NickName.indexOf('机器人') >= 0) {
-      config.SendNewsRooms.push(con.UserName)
+    if (con.NickName) {
+      if (con.NickName.indexOf('机器人') >= 0 ||
+        con.NickName.indexOf('互联网人沟通交流群') >= 0 ||
+        con.NickName.indexOf('开普老友交流群') >= 0 ||
+        con.NickName.indexOf('正商明钻业主群') >= 0) {
+        config.SendNewsRooms.push(con.UserName)
+      }
     }
   }
   console.log('联系人数量：', Object.keys(bot.contacts).length)
@@ -91,7 +95,7 @@ bot.on('login', () => {
    * 演示发送消息到文件传输助手
    * 通常回复消息时可以用 msg.FromUserName
    */
-  // let ToUserName = 'filehelper'
+    // let ToUserName = 'filehelper'
   let ToUserName = '@@bbc628d89d74d5e0caff6bf3123aee4febd8804b7472c720e0c6407ced868cba'
 
   initDay().then(r => console.log('initDay success.'))
@@ -122,6 +126,21 @@ bot.on('login', () => {
     })
   }
 
+  async function getLatestNews () {
+    // 获取土味情话
+    let url = 'http://fei.linyingtech.com/api/v1/latest/news'
+    try {
+      let res = await superagent.req({url, method: 'GET'})
+      if (res.code === 100) {
+        return res.data
+      } else {
+        return null
+      }
+    } catch (err) {
+      console.log('获取接口失败', err)
+    }
+  }
+
   /**
    * 发送今日热点新闻
    * @returns {Promise<void>}
@@ -141,10 +160,11 @@ bot.on('login', () => {
         const oneNew = newsInfo.newsList[i]
         content += `${i + 1}. [${oneNew.category}]${oneNew.title}\n`
       }
-      if (newsInfo.sentence !== undefined)
+      if (newsInfo.sentence !== undefined) {
         content += `\n[心语]${newsInfo.sentence.sentence} -- ${newsInfo.sentence.author}\n`
+      }
 
-      content += `\n更多信息可浏览https://fei.linyingtech.com/news?id=${newData.id}\n关注公众号:[一级码农]，免费体验chatgpt，及时获取最新科技娱乐实时新闻。\n`
+      content += `\n更多信息可浏览https://fei.linyingtech.com/news?id=${newData.id}\n关注公众号:[一级码农]，及时获取最新科技娱乐实时新闻。\n`
       await delay(100)
       bot.sendMsg(content, roomId)
         .catch(err => {

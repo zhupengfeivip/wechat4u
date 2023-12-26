@@ -89,8 +89,8 @@ module.exports = {
   /* 图灵机器人apikey,需要自己到图灵机器人官网申请，并且需要认证*/
   TULINGKEY: '图灵机器人apikey',
 
-  /* 定时发送时间 每天6点0分0秒发送，规则见 /schedule/index.js */
-  SendNewsTime: '30 * * * * *',
+  /* 定时发送时间 每天0点0分0秒发送，规则见 /schedule/index.js */
+  SendNewsTime: '0 30 0 * * *',
 
   /**
    * 以下群，每天定时发当时实时新闻
