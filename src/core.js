@@ -477,7 +477,7 @@ export default class WechatCore {
         return data
       })
     }).catch(err => {
-      debug(err)
+      console.error(err)
       err.tips = '发送文本信息失败'
       throw err
     })

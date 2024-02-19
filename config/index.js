@@ -103,6 +103,19 @@ module.exports = {
     // '正商明钻业主群',
     // '正商明钻-业主交流群',
   ],
+  SendNewsRoomNames: [
+    '机器人',
+    '互联网人沟通交流群',
+    '开普老友交流群',
+    '老朋友新天地',
+    '正商明钻',
+    '快乐生活理财分享交流群',
+  ],
+
+  /**
+   * 启动延时标识
+   */
+  startDelayCompleted: false,
 
   // (自定义) 如果你有 DIY 和基本的编程基础, 可以在这自己定义变量, 用于 js 文件访问, 包括设置简单的定时任务, 例如可以定义 task 数组
   // tasks: [{nick: 'personA', time: '早上', emoji: '🌝', action: 'eat xx', date: '0 0 8 * * *'},
