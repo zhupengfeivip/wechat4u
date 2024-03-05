@@ -49,7 +49,7 @@ npm run compile // babel编译
 
 ## 使用范例
 
-`node run-core.js`
+`node main.js`
 
 逻辑见[代码](https://github.com/nodeWechat/wechat4u/blob/master/run-core.js)，简明完整，一定要看
 

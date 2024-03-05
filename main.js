@@ -7,7 +7,26 @@ const request = require('request')
 const schedule = require('./schedule/index')
 const config = require('./config/index')
 const superagent = require('./superagent/superagent.js')
-
+const log4js = require('log4js')
+const path = require('path')
+// 配置log4js
+log4js.configure({
+  appenders: {
+    // 定义输出方式，例如控制台和文件
+    out: { type: 'console' },
+    default: {
+      type: 'file',
+      filename: 'log/run.log',
+      maxLogSize: 10485760, // 每个日志文件最大10MB
+      backups: 3, // 最多保留3个备份文件
+    },
+  },
+  categories: {
+    // 设置默认的logger以及对应的appender
+    default: { appenders: ['out', 'default'], level: 'ALL' },
+  },
+})
+const logger = log4js.getLogger(path.basename(__filename))
 let bot
 /**
  * 尝试获取本地登录数据，免扫码
@@ -18,7 +37,7 @@ try {
 } catch (e) {
   bot = new Wechat()
 }
-
+initDay().then((r) => console.log('initDay success.'))
 // 启动时间
 const startTime = new Date()
 setTimeout(function () {
@@ -30,7 +49,7 @@ const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
 // 创建微信每日说定时任务
 async function initDay() {
-  console.log('已经设定每日说任务')
+  logger.debug('已经设定每日说任务')
 
   // 定时任务：每日自动发送新闻
   schedule.setSchedule(config.SendNewsTime, async () => {
@@ -52,7 +71,7 @@ async function getLatestNews() {
       return null
     }
   } catch (err) {
-    console.log('获取接口失败', err)
+    logger.error('获取接口失败', err)
   }
 }
 
@@ -61,11 +80,11 @@ async function getLatestNews() {
  * @returns {Promise<void>}
  */
 async function sendNews() {
-  console.log('发送今日热点新闻 ' + new Date())
+  logger.debug('发送今日热点新闻 ' + new Date())
   let newData = await getLatestNews()
   let newsInfo = newData.content
   for (const roomId of config.SendNewsRooms) {
-    console.log(`群名: ${roomId}`)
+    logger.debug(`群名: ${roomId}`)
 
     let content = `今日热点 ${newsInfo.calendar.cMonth}月${newsInfo.calendar.cDay}日，${newsInfo.calendar.ncWeek}，`
     content += `农历${newsInfo.calendar.monthCn}${newsInfo.calendar.dayCn}\n`
@@ -82,7 +101,7 @@ async function sendNews() {
     // content += `\n更多信息可浏览https://fei.linyingtech.com/news?id=${newData.id}\n关注公众号:[一级码农]，及时获取最新科技娱乐实时新闻。\n`
     content += `\n详细信息可浏览https://fei.linyingtech.com/news?id=${newData.id}\n`
     await delay(100)
-    console.log('发送今日热点新闻 ', content)
+    logger.debug('发送今日热点新闻 ', content)
     bot.sendMsg(content, roomId).catch((err) => {
       bot.emit('error', err)
     })
@@ -105,19 +124,19 @@ bot.on('uuid', (uuid) => {
   qrcode.generate('https://login.weixin.qq.com/l/' + uuid, {
     small: true,
   })
-  console.log('二维码链接：', 'https://login.weixin.qq.com/qrcode/' + uuid)
+  logger.debug('二维码链接：', 'https://login.weixin.qq.com/qrcode/' + uuid)
 })
 /**
  * 登录用户头像事件，手机扫描后可以得到登录用户头像的Data URL
  */
 bot.on('user-avatar', (avatar) => {
-  console.log('登录用户头像Data URL：', avatar)
+  logger.debug('登录用户头像Data URL：', avatar)
 })
 /**
  * 登录成功事件
  */
 bot.on('login', () => {
-  console.log('登录成功')
+  logger.debug('登录成功')
   // 保存数据，将数据序列化之后保存到任意位置
   fs.writeFileSync('./sync-data.json', JSON.stringify(bot.botData))
 })
@@ -125,7 +144,7 @@ bot.on('login', () => {
  * 登出成功事件
  */
 bot.on('logout', () => {
-  console.log('登出成功')
+  logger.debug('登出成功')
   // 清除数据
   fs.unlinkSync('./sync-data.json')
 })
@@ -136,12 +155,12 @@ bot.on('contacts-updated', (contacts) => {
   // console.log(contacts)
   for (let i = 0; i < contacts.length; i++) {
     const con = contacts[i]
-    console.log(`[${i}/${contacts.length}]${con.UserName},${con.NickName},成员数量:${con.MemberCount}`)
+    logger.debug(`[${i}/${contacts.length}]${con.UserName},${con.NickName},成员数量:${con.MemberCount}`)
     if (!con.NickName) continue
 
     for (const roomName of config.SendNewsRoomNames) {
       if (con.NickName.indexOf(roomName) >= 0 && config.SendNewsRooms.indexOf(con.UserName) < 0) {
-        console.log('群发今日热点', roomName, con.NickName, con.UserName)
+        logger.debug('群发今日热点', roomName, con.NickName, con.UserName)
         config.SendNewsRooms.push(con.UserName)
       }
     }
@@ -158,14 +177,14 @@ bot.on('contacts-updated', (contacts) => {
     //   }
     // }
   }
-  console.log('config.SendNewsRooms：', config.SendNewsRooms)
-  console.log('联系人数量：', Object.keys(bot.contacts).length)
+  logger.debug('config.SendNewsRooms：', config.SendNewsRooms)
+  logger.debug('联系人数量：', Object.keys(bot.contacts).length)
 })
 /**
  * 错误事件，参数一般为Error对象
  */
 bot.on('error', (err) => {
-  console.error('错误：', err)
+  logger.error('错误：', err)
 })
 /**
  * 如何发送消息
@@ -178,8 +197,6 @@ bot.on('login', () => {
 
   // let ToUserName = 'filehelper'
   let ToUserName = '@@bbc628d89d74d5e0caff6bf3123aee4febd8804b7472c720e0c6407ced868cba'
-
-  initDay().then((r) => console.log('initDay success.'))
 
   /**
    * 发送文本消息，可以包含emoji(😒)和QQ表情([坏笑])
@@ -285,8 +302,8 @@ bot.on('message', (msg) => {
   switch (msg.MsgType) {
     case bot.CONF.MSGTYPE_TEXT:
       // 文本消息
-      console.log(`--Rx TextMsg(${msg.MsgType})：--${msgLog}`)
-      console.log(msg.Content)
+      logger.debug(`--Rx TextMsg(${msg.MsgType})：--${msgLog}`)
+      logger.debug(msg.Content)
       if (config.startDelayCompleted) {
         if (bot.contacts[msg.FromUserName].getDisplayName() === '朱鹏飞') {
           if (msg.Content === '补发') {
@@ -297,7 +314,7 @@ bot.on('message', (msg) => {
       break
     case bot.CONF.MSGTYPE_IMAGE:
       // 图片消息
-      console.log(`--收到图片消息(${msg.MsgType})：--${msgLog}`)
+      logger.debug(`--收到图片消息(${msg.MsgType})：--${msgLog}`)
       // bot.getMsgImg(msg.MsgId).then(res => {
       //   fs.writeFileSync(`./media/${msg.MsgId}.jpg`, res.data)
       // }).catch(err => {
@@ -306,7 +323,7 @@ bot.on('message', (msg) => {
       break
     case bot.CONF.MSGTYPE_VOICE:
       // 语音消息
-      console.log(`--收到语音消息(${msg.MsgType})：--${msgLog}`)
+      logger.debug(`--收到语音消息(${msg.MsgType})：--${msgLog}`)
       // bot.getVoice(msg.MsgId).then(res => {
       //   fs.writeFileSync(`./media/${msg.MsgId}.mp3`, res.data)
       // }).catch(err => {
@@ -315,7 +332,7 @@ bot.on('message', (msg) => {
       break
     case bot.CONF.MSGTYPE_EMOTICON:
       // 表情消息
-      console.log('表情消息，保存到本地')
+      logger.debug('表情消息，保存到本地')
       // bot.getMsgImg(msg.MsgId).then(res => {
       //   fs.writeFileSync(`./media/${msg.MsgId}.gif`, res.data)
       // }).catch(err => {
@@ -327,7 +344,7 @@ bot.on('message', (msg) => {
       /**
        * 视频消息
        */
-      console.log('视频消息，保存到本地')
+      logger.debug('视频消息，保存到本地')
       // bot.getVideo(msg.MsgId).then(res => {
       //   fs.writeFileSync(`./media/${msg.MsgId}.mp4`, res.data)
       // }).catch(err => {
@@ -337,7 +354,7 @@ bot.on('message', (msg) => {
     case bot.CONF.MSGTYPE_APP:
       if (msg.AppMsgType === 6) {
         // 文件消息
-        console.log('文件消息，保存到本地')
+        logger.debug('文件消息，保存到本地')
         // bot.getDoc(msg.FromUserName, msg.MediaId, msg.FileName).then(res => {
         //   fs.writeFileSync(`./media/${msg.FileName}`, res.data)
         //   console.log(res.type)
@@ -386,7 +403,7 @@ bot.on('message', (msg) => {
     bot
       .verifyUser(msg.RecommendInfo.UserName, msg.RecommendInfo.Ticket)
       .then((res) => {
-        console.log(`通过了 ${bot.Contact.getDisplayName(msg.RecommendInfo)} 好友请求`)
+        logger.debug(`通过了 ${bot.Contact.getDisplayName(msg.RecommendInfo)} 好友请求`)
       })
       .catch((err) => {
         bot.emit('error', err)
