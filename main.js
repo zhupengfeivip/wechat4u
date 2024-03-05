@@ -195,8 +195,8 @@ bot.on('login', () => {
    * 通常回复消息时可以用 msg.FromUserName
    */
 
-  // let ToUserName = 'filehelper'
-  let ToUserName = '@@bbc628d89d74d5e0caff6bf3123aee4febd8804b7472c720e0c6407ced868cba'
+  let ToUserName = 'filehelper'
+  // let ToUserName = '@@bbc628d89d74d5e0caff6bf3123aee4febd8804b7472c720e0c6407ced868cba'
 
   /**
    * 发送文本消息，可以包含emoji(😒)和QQ表情([坏笑])
@@ -375,6 +375,7 @@ bot.on('message', (msg) => {
   if (msg.MsgType == bot.CONF.MSGTYPE_SYS && /红包/.test(msg.Content)) {
     // 若系统消息中带有‘红包’，则认为是红包消息
     // wechat4u并不能自动收红包
+    logger.debug('红包消息')
   }
 })
 /**
@@ -383,6 +384,7 @@ bot.on('message', (msg) => {
 bot.on('message', (msg) => {
   if (msg.MsgType == bot.CONF.MSGTYPE_APP && msg.AppMsgType == bot.CONF.APPMSGTYPE_TRANSFERS) {
     // 转账
+    logger.debug('转账消息')
   }
 })
 /**
