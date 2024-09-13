@@ -1,5 +1,11 @@
 # wechat4u.js
 
+查询最新新闻
+http://localhost:3000/get/news
+
+补发
+http://localhost:3000/news/bf
+
 ![](http://7xr8pm.com1.z0.glb.clouddn.com/nodeWechat.png) [![npm version](https://img.shields.io/npm/v/wechat4u.svg)](https://www.npmjs.org/package/wechat4u) [![wechat group](https://img.shields.io/badge/wechat-group-brightgreen.svg)](http://www.qr-code-generator.com/phpqrcode/getCode.php?cht=qr&chl=http%3A%2F%2Fweixin.qq.com%2Fg%2FA1zJ47b19KtgMnAx&chs=180x180&choe=UTF-8&chld=L|0)
 
 ## Announcing wechat4u v0.7.14
@@ -27,6 +33,8 @@
 
 ```
 npm install --save wechat4u@latest
+
+npm run pkg:win
 ```
 
 ```javascript

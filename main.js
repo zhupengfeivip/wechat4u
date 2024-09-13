@@ -9,6 +9,17 @@ const config = require('./config/index')
 const superagent = require('./superagent/superagent.js')
 const log4js = require('log4js')
 const path = require('path')
+// Include process module
+const process = require('process')
+const express = require('express')
+const app = express()
+const port = 3000
+
+// Printing process.title property value
+console.log('Before modification:PID:' + process.pid + ' process title is ' + process.title)
+
+// Setting new process title value
+process.title = 'wechat4u'
 // 配置log4js
 log4js.configure({
   appenders: {
@@ -46,7 +57,24 @@ setTimeout(function () {
 
 // 延时函数，防止检测出类似机器人行为操作
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+app.get('/', (req, res) => {
+  res.send('Hello World!')
+})
+app.get('/get/news', async (req, res) => {
+  logger.debug('发送今日热点新闻 ' + new Date())
+  let newData = await getLatestNews()
+  res.send(newData)
+})
 
+app.get('/news/bf', async (req, res) => {
+  logger.debug('发送今日热点新闻 ' + new Date())
+  await sendNews()
+  res.send('补发完成')
+})
+
+app.listen(port, () => {
+  console.log(`Example app listening on port ${port}`)
+})
 // 创建微信每日说定时任务
 async function initDay() {
   logger.debug('已经设定每日说任务')

@@ -39,3 +39,5 @@ node_modules
 /typings
 .idea/*
 /media
+/wechat4u-win.exe
+/log
